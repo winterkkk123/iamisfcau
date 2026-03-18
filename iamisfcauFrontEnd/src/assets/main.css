@@ -1,0 +1,26 @@
+/* main.css（后台系统标准写法） */
+
+/* 重置 */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* 全局背景 */
+body {
+  background-color: rgb(217, 234, 252);
+  overflow: hidden; /* 禁止 body 滚动，防止露底 */
+}
+
+/* 可选：全局链接样式 */
+a {
+  text-decoration: none;
+  color: inherit;
+}

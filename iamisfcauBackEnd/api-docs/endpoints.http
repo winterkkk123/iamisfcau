@@ -1,0 +1,297 @@
+@baseUrl = http://localhost:8080
+# @token = paste_your_token_here
+
+### ===================== ActivityController =====================
+
+### GET /api/activities (list)
+GET {{baseUrl}}/api/activities
+
+### GET /api/activities/joined (joined)
+GET {{baseUrl}}/api/activities/joined
+
+### GET /api/activities/{id} (detail)
+GET {{baseUrl}}/api/activities/{id}
+
+### GET /api/activities/{id}/attendance (attendance)
+GET {{baseUrl}}/api/activities/{id}/attendance
+
+### PUT /api/activities/{id}/attendance/{userId} (updateAttendance)
+PUT {{baseUrl}}/api/activities/{id}/attendance/{userId}
+Content-Type: application/json
+
+{
+  "attendStatus": "string",
+  "isLate": true
+}
+
+### DELETE /api/activities/{id}/join (cancelJoin)
+DELETE {{baseUrl}}/api/activities/{id}/join
+
+### POST /api/activities/{id}/join (join)
+POST {{baseUrl}}/api/activities/{id}/join
+Content-Type: application/json
+
+{
+  "userId": "string"
+}
+
+
+### ===================== ActivityCreateApprovalController =====================
+
+### GET /api/activity-create-approvals (list)
+GET {{baseUrl}}/api/activity-create-approvals
+
+### POST /api/activity-create-approvals (create)
+POST {{baseUrl}}/api/activity-create-approvals
+Content-Type: application/json
+
+{
+  "title": "string",
+  "organizer": "string",
+  "leaderId": "string",
+  "startAt": "string",
+  "endAt": "string",
+  "location": "string",
+  "summary": "string",
+  "content": "string"
+}
+
+### DELETE /api/activity-create-approvals/{applyId} (withdraw)
+DELETE {{baseUrl}}/api/activity-create-approvals/{applyId}
+
+### POST /api/activity-create-approvals/{applyId}/approve (approve)
+POST {{baseUrl}}/api/activity-create-approvals/{applyId}/approve
+Content-Type: application/json
+
+{
+  "approvalComment": "string"
+}
+
+### POST /api/activity-create-approvals/{applyId}/reject (reject)
+POST {{baseUrl}}/api/activity-create-approvals/{applyId}/reject
+Content-Type: application/json
+
+{
+  "approvalComment": "string"
+}
+
+
+### ===================== AiController =====================
+
+### POST /api/ai/chat (chat)
+POST {{baseUrl}}/api/ai/chat
+Content-Type: application/json
+
+{
+  "conversationId": "string",
+  "message": "string",
+  "userId": "string",
+  "userName": "string"
+}
+
+### GET /api/ai/conversations (conversations)
+GET {{baseUrl}}/api/ai/conversations
+
+### POST /api/ai/conversations (createConversation)
+POST {{baseUrl}}/api/ai/conversations
+
+### GET /api/ai/conversations/{id}/messages (messages)
+GET {{baseUrl}}/api/ai/conversations/{id}/messages
+
+
+### ===================== AuthController =====================
+
+### POST /api/auth/login (login)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "id": "string",
+  "password": "string"
+}
+
+
+### ===================== CommunityController =====================
+
+### POST /api/community/comments/{commentId}/replies (reply)
+POST {{baseUrl}}/api/community/comments/{commentId}/replies
+Content-Type: application/json
+
+{
+  "content": "string"
+}
+
+### GET /api/community/posts (listPosts)
+GET {{baseUrl}}/api/community/posts
+
+### POST /api/community/posts (createPost)
+POST {{baseUrl}}/api/community/posts
+Content-Type: application/json
+
+{
+  "content": "string",
+  "type": "string",
+  "relatedActivityId": "string",
+  "images": [
+    "item"
+  ]
+}
+
+### DELETE /api/community/posts/{id} (deletePost)
+DELETE {{baseUrl}}/api/community/posts/{id}
+
+### GET /api/community/posts/{id} (detail)
+GET {{baseUrl}}/api/community/posts/{id}
+
+### POST /api/community/posts/{id}/comments (createComment)
+POST {{baseUrl}}/api/community/posts/{id}/comments
+Content-Type: application/json
+
+{
+  "content": "string"
+}
+
+### POST /api/community/posts/{id}/favorite (toggleFavorite)
+POST {{baseUrl}}/api/community/posts/{id}/favorite
+
+### POST /api/community/posts/{id}/like (toggleLike)
+POST {{baseUrl}}/api/community/posts/{id}/like
+
+
+### ===================== LeaveApprovalController =====================
+
+### GET /api/leave-approvals (list)
+GET {{baseUrl}}/api/leave-approvals
+
+### POST /api/leave-approvals (create)
+POST {{baseUrl}}/api/leave-approvals
+Content-Type: application/json
+
+{
+  "activityId": 123,
+  "applicantId": "string",
+  "reason": "string"
+}
+
+### DELETE /api/leave-approvals/{applyId} (withdraw)
+DELETE {{baseUrl}}/api/leave-approvals/{applyId}
+
+### POST /api/leave-approvals/{applyId}/approve (approve)
+POST {{baseUrl}}/api/leave-approvals/{applyId}/approve
+Content-Type: application/json
+
+{
+  "approvalComment": "string"
+}
+
+### POST /api/leave-approvals/{applyId}/reject (reject)
+POST {{baseUrl}}/api/leave-approvals/{applyId}/reject
+Content-Type: application/json
+
+{
+  "approvalComment": "string"
+}
+
+
+### ===================== MessageCenterController =====================
+
+### GET /api/messages/conversations (conversations)
+GET {{baseUrl}}/api/messages/conversations
+
+### GET /api/messages/conversations/{id}/messages (messages)
+GET {{baseUrl}}/api/messages/conversations/{id}/messages
+
+### POST /api/messages/conversations/{id}/messages (sendMessage)
+POST {{baseUrl}}/api/messages/conversations/{id}/messages
+Content-Type: application/json
+
+{
+  "role": "string",
+  "content": "string"
+}
+
+
+### ===================== NoticeController =====================
+
+### GET /api/notices (list)
+GET {{baseUrl}}/api/notices
+
+### GET /api/notices/{id} (detail)
+GET {{baseUrl}}/api/notices/{id}
+
+
+### ===================== ProfileChangeController =====================
+
+### GET /api/profile-change-applications (list)
+GET {{baseUrl}}/api/profile-change-applications
+
+### POST /api/profile-change-applications (create)
+POST {{baseUrl}}/api/profile-change-applications
+Content-Type: application/json
+
+{
+  "targetUserId": "string",
+  "applicantId": "string",
+  "changeType": "string",
+  "beforeValue": "string",
+  "afterValue": "string"
+}
+
+### POST /api/profile-change-applications/{applyId}/approve (approve)
+POST {{baseUrl}}/api/profile-change-applications/{applyId}/approve
+Content-Type: application/json
+
+{
+  "approvalComment": "string"
+}
+
+### POST /api/profile-change-applications/{applyId}/reject (reject)
+POST {{baseUrl}}/api/profile-change-applications/{applyId}/reject
+Content-Type: application/json
+
+{
+  "approvalComment": "string"
+}
+
+
+### ===================== UserController =====================
+
+### GET /api/users (list)
+GET {{baseUrl}}/api/users
+
+### POST /api/users (create)
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "id": "string",
+  "name": "string",
+  "role": "string",
+  "password": "string",
+  "gender": "string",
+  "avatar": "string",
+  "department": "string",
+  "phone": "string"
+}
+
+### GET /api/users/me (me)
+GET {{baseUrl}}/api/users/me
+
+### DELETE /api/users/{id} (delete)
+DELETE {{baseUrl}}/api/users/{id}
+
+### PUT /api/users/{id} (update)
+PUT {{baseUrl}}/api/users/{id}
+Content-Type: application/json
+
+{
+  "name": "string",
+  "role": "string",
+  "password": "string",
+  "gender": "string",
+  "avatar": "string",
+  "department": "string",
+  "phone": "string"
+}
+
+

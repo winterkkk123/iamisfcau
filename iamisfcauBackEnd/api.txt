@@ -1,0 +1,85 @@
+Auth/用户
+
+POST /api/auth/login
+
+GET /api/users/me
+
+活动
+
+GET /api/activities
+
+GET /api/activities/joined
+
+GET /api/activities/{id}
+
+GET /api/activities/{id}/attendance
+
+PUT /api/activities/{id}/attendance/{userId}
+
+DELETE /api/activities/{id}/join
+
+POST /api/activities/{id}/join
+
+活动创建审批
+
+GET /api/activity-create-approvals
+
+POST /api/activity-create-approvals
+
+DELETE /api/activity-create-approvals/{applyId}
+
+POST /api/activity-create-approvals/{applyId}/approve
+
+POST /api/activity-create-approvals/{applyId}/reject
+
+请假审批
+
+GET /api/leave-approvals
+
+POST /api/leave-approvals/{applyId}/approve
+
+POST /api/leave-approvals/{applyId}/reject
+
+个人资料变更审批
+
+GET /api/profile-change-applications
+
+POST /api/profile-change-applications
+
+POST /api/profile-change-applications/{applyId}/approve
+
+POST /api/profile-change-applications/{applyId}/reject
+
+公告
+
+GET /api/notices
+
+社区
+
+GET /api/community/posts
+
+GET /api/community/posts/{id}
+
+POST /api/community/posts/{id}/comments
+
+POST /api/community/posts/{id}/like
+
+POST /api/community/posts/{id}/favorite
+
+POST /api/community/comments/{commentId}/replies
+
+消息中心
+
+GET /api/messages/conversations
+
+GET /api/messages/conversations/{id}/messages
+
+AI
+
+POST /api/ai/chat
+
+GET /api/ai/conversations
+
+POST /api/ai/conversations
+
+GET /api/ai/conversations/{id}/messages
