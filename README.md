@@ -16,12 +16,12 @@
 ```
 
 ### 项目启动
-1.创建数据库
-CREATE DATABASE iamisfcaudatabase;
-2.启动ai模型
-ollama run deepseek-r1:1.5b 
-3.启动后端项目
-cd iamisfcauBackEnd
-4.启动前端项目
-npm run dev
-5.访问http://localhost:8080
+- 1.创建数据库
+- CREATE DATABASE iamisfcaudatabase;
+- 2.启动ai模型
+- ollama run deepseek-r1:1.5b 
+- 3.启动后端项目
+- cd iamisfcauBackEnd
+- 4.启动前端项目
+- npm run dev
+- 5.访问http://localhost:8080
