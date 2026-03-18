@@ -1,0 +1,406 @@
+USE iamisfcaudatabase;
+
+-- 为了可重复执行（开发阶段），先按依赖顺序删除
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS community_post_reactions;
+DROP TABLE IF EXISTS community_comments;
+DROP TABLE IF EXISTS community_posts;
+
+DROP TABLE IF EXISTS activity_attendance;
+DROP TABLE IF EXISTS user_activity_rel;
+DROP TABLE IF EXISTS activity_leave_applications;
+DROP TABLE IF EXISTS activity_create_applications;
+DROP TABLE IF EXISTS profile_change_applications;
+
+DROP TABLE IF EXISTS activities;
+DROP TABLE IF EXISTS notices;
+DROP TABLE IF EXISTS users;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============ 1) users 用户表 ============
+CREATE TABLE users (
+  id            VARCHAR(20)  NOT NULL,
+  name          VARCHAR(50)  NOT NULL,
+  role          VARCHAR(20)  NOT NULL,      -- 管理员/教师/辅导员/学生
+  password      VARCHAR(100) NOT NULL,
+  gender        VARCHAR(10)  NULL,
+  avatar        VARCHAR(255) NULL,
+  department    VARCHAR(50)  NULL,          -- 你 mock 里 users 用 department
+  college       VARCHAR(50)  NULL,          -- appState.user 用 college
+  phone         VARCHAR(20)  NULL,
+  created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 2) notices 通知表（tags 融合进本表） ============
+CREATE TABLE notices (
+  id          INT          NOT NULL,
+  title       VARCHAR(200) NOT NULL,
+  content     TEXT         NOT NULL,
+  tags        JSON         NOT NULL,         -- 例如 ["top","normal"]
+  notice_time DATETIME     NOT NULL,
+  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 3) activities 活动表 ============
+CREATE TABLE activities (
+  id           INT          NOT NULL,
+  title        VARCHAR(200) NOT NULL,
+  organizer    VARCHAR(100) NOT NULL,
+  leader_id    VARCHAR(20)  NOT NULL,
+  leader_name  VARCHAR(50)  NOT NULL,
+  activity_date DATE        NULL,            -- date: 2026-01-22
+  activity_time VARCHAR(10) NULL,            -- time: "14:00"
+  start_at     DATETIME     NOT NULL,
+  end_at       DATETIME     NOT NULL,
+  location     VARCHAR(200) NOT NULL,
+  summary      VARCHAR(255) NULL,
+  content      TEXT         NULL,
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_activities_leader FOREIGN KEY (leader_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 4) activity_create_applications 活动创建申请/审批表 ============
+CREATE TABLE activity_create_applications (
+  apply_id     VARCHAR(30)  NOT NULL,
+  title        VARCHAR(200) NOT NULL,
+  organizer    VARCHAR(100) NOT NULL,
+  leader_id    VARCHAR(20)  NOT NULL,
+  leader_name  VARCHAR(50)  NOT NULL,
+  start_at     DATETIME     NOT NULL,
+  end_at       DATETIME     NOT NULL,
+  location     VARCHAR(200) NOT NULL,
+  summary      VARCHAR(255) NULL,
+  content      TEXT         NULL,
+  submitted_at DATETIME     NOT NULL,
+  status       VARCHAR(20)  NOT NULL,        -- 待审核/已同意/已拒绝
+  auditor_id   VARCHAR(20)  NULL,
+  auditor_name VARCHAR(50)  NULL,
+  audited_at   DATETIME     NULL,
+  comment      VARCHAR(255) NULL,
+  PRIMARY KEY (apply_id),
+  CONSTRAINT fk_aca_leader  FOREIGN KEY (leader_id)  REFERENCES users(id),
+  CONSTRAINT fk_aca_auditor FOREIGN KEY (auditor_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 5) profile_change_applications 用户资料变更申请/审核表 ============
+CREATE TABLE profile_change_applications (
+  apply_id       VARCHAR(30)  NOT NULL,
+  target_user_id VARCHAR(20)  NOT NULL,      -- 被变更用户
+  target_user_name VARCHAR(50) NOT NULL,
+  applicant_id   VARCHAR(20)  NOT NULL,      -- 发起人
+  applicant_name VARCHAR(50)  NOT NULL,
+  change_type    VARCHAR(50)  NOT NULL,      -- 电话变更/所属部门变更/性别变更
+  before_value   VARCHAR(255) NULL,
+  after_value    VARCHAR(255) NULL,
+  submitted_at   DATETIME     NOT NULL,
+  status         VARCHAR(20)  NOT NULL,      -- 待审核/已同意/已拒绝
+  approval_comment VARCHAR(255) NULL,
+  PRIMARY KEY (apply_id),
+  CONSTRAINT fk_pca_target    FOREIGN KEY (target_user_id) REFERENCES users(id),
+  CONSTRAINT fk_pca_applicant FOREIGN KEY (applicant_id)   REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 6) activity_leave_applications 活动请假申请/审批表 ============
+CREATE TABLE activity_leave_applications (
+  apply_id       VARCHAR(30)  NOT NULL,
+  activity_id    INT          NOT NULL,
+  activity_title VARCHAR(200) NOT NULL,
+  teacher_id     VARCHAR(20)  NOT NULL,
+  teacher_name   VARCHAR(50)  NOT NULL,
+  applicant_id   VARCHAR(20)  NOT NULL,
+  applicant_name VARCHAR(50)  NOT NULL,
+  reason         VARCHAR(500) NOT NULL,
+  submitted_at   DATETIME     NOT NULL,
+  status         VARCHAR(20)  NOT NULL,      -- 待审核/已同意/已拒绝
+  approval_comment VARCHAR(255) NULL,
+  PRIMARY KEY (apply_id),
+  CONSTRAINT fk_ala_activity  FOREIGN KEY (activity_id)  REFERENCES activities(id),
+  CONSTRAINT fk_ala_teacher   FOREIGN KEY (teacher_id)   REFERENCES users(id),
+  CONSTRAINT fk_ala_applicant FOREIGN KEY (applicant_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 7) user_activity_rel 用户-活动关系表（参加/管理） ============
+CREATE TABLE user_activity_rel (
+  user_id       VARCHAR(20) NOT NULL,
+  activity_id   INT         NOT NULL,
+  relation_type VARCHAR(20) NOT NULL,  -- join / manage
+  created_at    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, activity_id, relation_type),
+  CONSTRAINT fk_uar_user    FOREIGN KEY (user_id)    REFERENCES users(id),
+  CONSTRAINT fk_uar_activity FOREIGN KEY (activity_id) REFERENCES activities(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 8) activity_attendance 活动出勤/签到表 ============
+CREATE TABLE activity_attendance (
+  id           BIGINT      NOT NULL AUTO_INCREMENT,
+  activity_id  INT         NOT NULL,
+  user_id      VARCHAR(20) NOT NULL,
+  user_name    VARCHAR(50) NOT NULL,
+  sign_in_at   DATETIME    NULL,
+  attend_status VARCHAR(20) NOT NULL, -- 未出勤/已出勤/请假
+  leave_apply_id VARCHAR(30) NULL,
+  is_late      TINYINT(1)  NOT NULL DEFAULT 0,
+  created_at   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_attendance (activity_id, user_id),
+  CONSTRAINT fk_att_activity FOREIGN KEY (activity_id) REFERENCES activities(id),
+  CONSTRAINT fk_att_user     FOREIGN KEY (user_id)     REFERENCES users(id),
+  CONSTRAINT fk_att_leave    FOREIGN KEY (leave_apply_id) REFERENCES activity_leave_applications(apply_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 9) community_posts 社区帖子表（images JSON + views_count） ============
+CREATE TABLE community_posts (
+  id                VARCHAR(50)  NOT NULL,
+  created_by_user_id VARCHAR(20)  NOT NULL,
+  created_at         DATETIME     NOT NULL,
+  type               VARCHAR(50)  NOT NULL,         -- activity_recommend / work_study ...
+  related_activity_id INT         NULL,
+  content            TEXT         NOT NULL,
+  images             JSON         NOT NULL,         -- 图片路径数组
+  views_count        INT          NOT NULL DEFAULT 0,
+  created_at_db       DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_cp_user     FOREIGN KEY (created_by_user_id) REFERENCES users(id),
+  CONSTRAINT fk_cp_activity FOREIGN KEY (related_activity_id) REFERENCES activities(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 10) community_comments 社区评论/回复表（parent_comment_id 支持回复） ============
+CREATE TABLE community_comments (
+  id                VARCHAR(50)  NOT NULL,
+  post_id            VARCHAR(50)  NOT NULL,
+  user_id            VARCHAR(20)  NOT NULL,
+  user_name          VARCHAR(50)  NOT NULL,
+  created_at         DATETIME     NOT NULL,
+  content            VARCHAR(1000) NOT NULL,
+  parent_comment_id  VARCHAR(50)  NULL,
+  PRIMARY KEY (id),
+  KEY idx_comments_post (post_id),
+  KEY idx_comments_parent (parent_comment_id),
+  CONSTRAINT fk_cc_post   FOREIGN KEY (post_id) REFERENCES community_posts(id),
+  CONSTRAINT fk_cc_user   FOREIGN KEY (user_id) REFERENCES users(id),
+  CONSTRAINT fk_cc_parent FOREIGN KEY (parent_comment_id) REFERENCES community_comments(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 11) community_post_reactions 社区互动表（点赞/收藏合并） ============
+CREATE TABLE community_post_reactions (
+  id            BIGINT      NOT NULL AUTO_INCREMENT,
+  post_id        VARCHAR(50) NOT NULL,
+  user_id        VARCHAR(20) NOT NULL,
+  reaction_type  ENUM('like','favorite') NOT NULL,
+  created_at     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_reaction (post_id, user_id, reaction_type),
+  CONSTRAINT fk_cpr_post FOREIGN KEY (post_id) REFERENCES community_posts(id),
+  CONSTRAINT fk_cpr_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =========================================================
+-- ====================== 插入 seed 数据 =====================
+-- =========================================================
+
+-- users
+INSERT INTO users (id, name, role, password, gender, avatar, department, college, phone)
+VALUES
+('0001','系统管理员','管理员','admin123','男','/profilePicture.jpg','信息中心','信息中心','13800000001'),
+('2023001','张老师','教师','teacher123','女','/AnonymousAvatar.png','计算机学院',NULL,'13800000002'),
+('2023002','李老师','教师','teacher123','男','/AnonymousAvatar.png','数学学院',NULL,'13800000003'),
+('2024001','王辅导员','辅导员','counselor123','女','/AnonymousAvatar.png','学生工作处',NULL,'13800000004'),
+('2024002','赵辅导员','辅导员','counselor123','男','/AnonymousAvatar.png','学生工作处',NULL,'13800000005'),
+('2024123456','调试用户','学生','student123','男','/AnonymousAvatar.png','计算机学院',NULL,'13800000006'),
+('2024010123','刘同学','学生','student123','女','/AnonymousAvatar.png','外国语学院',NULL,'13800000007'),
+('2024020789','陈同学','学生','student123','男','/AnonymousAvatar.png','经济学院',NULL,'13800000008');
+
+-- notices（tags 融合）
+INSERT INTO notices (id, title, content, tags, notice_time)
+VALUES
+(1,'关于期末考试安排的通知',
+'各学院、各位同学：\n\n2025-2026 学年期末考试安排已经确定，请同学们提前做好复习准备。\n具体考试时间、地点请登录教务系统进行查询。\n\n请务必携带学生证参加考试，遵守考场纪律。\n\n特此通知。',
+JSON_ARRAY('top','normal'),
+'2026-01-20 00:00:00'),
+(2,'本周系统维护公告',
+'为提升系统稳定性，学校信息系统将于本周进行例行维护。\n维护期间部分功能可能暂时无法使用，请大家合理安排时间。\n\n给您带来不便，敬请谅解。',
+JSON_ARRAY('normal'),
+'2026-01-01 00:00:00');
+
+-- activities
+INSERT INTO activities
+(id, title, organizer, leader_id, leader_name, activity_date, activity_time, start_at, end_at, location, summary, content)
+VALUES
+(1,'人工智能前沿学术讲座','计算机学院','2023001','张老师','2026-01-22','14:00','2026-01-22 14:00:00','2026-01-22 16:00:00','学活剧院',
+'围绕大模型与智能系统最新研究展开，含现场答疑。',
+'本次讲座将围绕人工智能在大模型、智能系统方向的最新研究成果展开。\n\n主讲人将分享科研经验，并就同学们关心的问题进行现场答疑。\n欢迎相关专业同学积极参与。'),
+(2,'校级程序设计竞赛','教务处','2023001','张老师','2026-01-25','09:00','2026-01-25 09:00:00','2026-01-25 12:00:00','信息楼301',
+'面向全校本科生，现场编程竞赛，优秀选手有校级奖励。',
+'本次竞赛面向全校本科生，采取现场编程形式。\n\n参赛同学需提前报名，比赛当天携带学生证。\n优秀选手将获得校级奖励。');
+
+-- activity_create_applications
+INSERT INTO activity_create_applications
+(apply_id, title, organizer, leader_id, leader_name, start_at, end_at, location, summary, content, submitted_at, status, auditor_id, auditor_name, audited_at, comment)
+VALUES
+('AC-20260206-0001','数据结构算法训练营','计算机学院','2023002','李老师',
+'2026-02-20 18:30:00','2026-02-20 20:30:00','信息楼201','面向大一大二，算法基础训练。','包含基础题讲解、现场练习和答疑。',
+'2026-02-06 10:20:00','待审核',NULL,NULL,NULL,NULL),
+('AC-20260201-0002','英语角交流活动','外国语学院','2023001','张老师',
+'2026-02-12 19:00:00','2026-02-12 20:30:00','图书馆一楼报告厅','自由交流+主题讨论，提升口语与表达。','活动包含分组交流、主题讨论和老师点评，欢迎报名参与。',
+'2026-02-01 09:20:00','已同意','0001','系统管理员','2026-02-01 10:05:00','材料齐全，批准创建。');
+
+-- profile_change_applications（auditRecords）
+INSERT INTO profile_change_applications
+(apply_id, target_user_id, target_user_name, applicant_id, applicant_name, change_type, before_value, after_value, submitted_at, status, approval_comment)
+VALUES
+('AR-20260201-0001','2024123456','调试用户','2024123456','调试用户','电话变更','13800000006','13900000006','2026-02-01 10:12:00','待审核',NULL),
+('AR-20260202-0002','2024010123','刘同学','0001','系统管理员','所属部门变更','外国语学院','计算机学院','2026-02-02 14:30:00','已同意','材料齐全，同意变更。'),
+('AR-20260203-0003','2024020789','陈同学','2024020789','陈同学','性别变更','男','女','2026-02-03 09:05:00','已拒绝',NULL);
+
+-- activity_leave_applications（leaveApprovals）
+INSERT INTO activity_leave_applications
+(apply_id, activity_id, activity_title, teacher_id, teacher_name, applicant_id, applicant_name, reason, submitted_at, status, approval_comment)
+VALUES
+('LA-20260201-0001',2,'校级程序设计竞赛','2023001','张老师','2024123456','调试用户',
+'与学院安排的实验课时间冲突，申请请假。','2026-02-01 11:20:00','待审核',NULL),
+('LA-20260202-0002',2,'校级程序设计竞赛','2023001','张老师','2024010123','刘同学',
+'当天需要参加外语学院组织的面试，时间冲突。','2026-02-02 09:35:00','已同意','情况属实，已批准请假。'),
+('LA-20260203-0003',2,'校级程序设计竞赛','2023001','张老师','2024020789','陈同学',
+'个人原因无法到场。','2026-02-03 16:10:00','已拒绝','理由不充分，请按要求参加活动。');
+
+-- user_activity_rel（从 users/appState 的 joinedActivityIds / managedActivityIds 导出）
+-- 管理员 0001：join 1,2; manage 1,2
+INSERT INTO user_activity_rel (user_id, activity_id, relation_type) VALUES
+('0001',1,'join'),('0001',2,'join'),('0001',1,'manage'),('0001',2,'manage'),
+-- 张老师 2023001：manage 2
+('2023001',2,'manage'),
+-- 调试用户 2024123456：join 2
+('2024123456',2,'join'),
+-- 刘同学 2024010123：join 2
+('2024010123',2,'join'),
+-- 陈同学 2024020789：join 2
+('2024020789',2,'join');
+
+-- activity_attendance（从 activities[].attendance[] 导入）
+INSERT INTO activity_attendance
+(activity_id, user_id, user_name, sign_in_at, attend_status, leave_apply_id, is_late)
+VALUES
+(1,'2024010123','刘同学',NULL,'未出勤',NULL,0),
+(1,'0001','系统管理员',NULL,'未出勤',NULL,0),
+
+(2,'2024123456','调试用户','2026-01-25 08:55:00','已出勤',NULL,1),
+(2,'2024010123','刘同学',NULL,'请假','LA-20260202-0002',0),
+(2,'2024020789','陈同学',NULL,'未出勤',NULL,0);
+
+-- community_posts（images JSON + views_count=stats.views）
+INSERT INTO community_posts
+(id, created_by_user_id, created_at, type, related_activity_id, content, images, views_count)
+VALUES
+('post-teacher-0001','2023001','2026-02-06 09:15:00','activity_recommend',1,
+'【活动推荐】人工智能前沿学术讲座来啦！本次会围绕大模型与智能系统的最新研究展开，也会有答疑环节。欢迎同学们来听～',
+JSON_ARRAY('/community/teacher1/1.jpg'),
+520),
+('post-counselor-0001','2024001','2026-02-05 16:20:00','work_study',NULL,
+'【勤工俭学招聘】图书馆与信息中心现开放若干勤工助学岗位：\n1）图书整理/咨询引导\n2）机房值班/设备登记\n要求：认真负责、每周可固定排班。\n报名方式：请到“个人中心-申请”提交材料，截止 2 月 10 日。',
+JSON_ARRAY(),
+310),
+('post-student-0001','2024123456','2026-02-04 21:10:00','activity_recommend',2,
+'【活动推荐】校级程序设计竞赛真的很值得参加！我把报名流程和准备资料整理成九宫格了，想参赛的同学可以参考～一起冲！',
+JSON_ARRAY('/community/student1/1.jpg','/community/student1/1.jpg','/community/student1/1.jpg','/community/student1/1.jpg','/community/student1/1.jpg','/community/student1/1.jpg','/community/student1/1.jpg','/community/student1/1.jpg','/community/student1/1.jpg'),
+860);
+
+-- community_comments（把 replies 作为 parent_comment_id 的子评论）
+INSERT INTO community_comments
+(id, post_id, user_id, user_name, created_at, content, parent_comment_id)
+VALUES
+-- post-teacher-0001
+('c-t-0001','post-teacher-0001','2024010123','刘同学','2026-02-06 09:40:00','老师需要提前报名吗？',NULL),
+('r-t-0001','post-teacher-0001','2023001','张老师','2026-02-06 09:48:00','不需要报名，提前到场签到即可～','c-t-0001'),
+
+-- post-counselor-0001
+('c-w-0001','post-counselor-0001','2024123456','调试用户','2026-02-05 16:45:00','请问每周大概需要排班几次？',NULL),
+('r-w-0001','post-counselor-0001','2024001','王辅导员','2026-02-05 16:55:00','一般每周 2-3 次，每次 2 小时左右，会根据课表协调。','c-w-0001'),
+
+-- post-student-0001
+('c-s-0001','post-student-0001','2023002','李老师','2026-02-04 21:40:00','整理得很细致，祝你比赛取得好成绩！',NULL),
+('r-s-0001','post-student-0001','2024123456','调试用户','2026-02-04 21:45:00','谢谢老师！我会继续加油的！','c-s-0001');
+
+-- community_post_reactions（按 appState.user 的 favorites/posts 关系来填充：0001 收藏 teacher+counselor；点赞&收藏 student）
+INSERT INTO community_post_reactions (post_id, user_id, reaction_type) VALUES
+('post-teacher-0001','0001','favorite'),
+('post-counselor-0001','0001','favorite'),
+('post-student-0001','0001','favorite'),
+('post-student-0001','0001','like');
+
+DROP TABLE IF EXISTS ai_messages;
+DROP TABLE IF EXISTS ai_conversations;
+DROP TABLE IF EXISTS message_messages;
+DROP TABLE IF EXISTS message_conversations;
+
+-- ============ AI 会话表 ============
+CREATE TABLE ai_conversations (
+  id         VARCHAR(50)  NOT NULL,
+  title      VARCHAR(200) NOT NULL,
+  created_at DATETIME     NOT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ AI 消息表 ============
+CREATE TABLE ai_messages (
+  id              BIGINT      NOT NULL AUTO_INCREMENT,
+  conversation_id VARCHAR(50) NOT NULL,
+  role            ENUM('assistant','user') NOT NULL,
+  content         TEXT        NOT NULL,
+  created_at      DATETIME    NOT NULL,
+  seq             INT         NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_ai_msg_conv (conversation_id, seq),
+  CONSTRAINT fk_ai_msg_conv FOREIGN KEY (conversation_id) REFERENCES ai_conversations(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 消息中心会话表 ============
+CREATE TABLE message_conversations (
+  id         VARCHAR(50)  NOT NULL,
+  name       VARCHAR(100) NOT NULL,
+  avatar     VARCHAR(255) NULL,
+  updated_at DATETIME     NOT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ 消息中心消息表 ============
+CREATE TABLE message_messages (
+  id              BIGINT      NOT NULL AUTO_INCREMENT,
+  conversation_id VARCHAR(50) NOT NULL,
+  role            ENUM('system','other','self') NOT NULL,
+  content         TEXT        NOT NULL,
+  sent_at         DATETIME    NOT NULL,
+  seq             INT         NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_msg_conv (conversation_id, seq),
+  CONSTRAINT fk_msg_conv FOREIGN KEY (conversation_id) REFERENCES message_conversations(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ================= 插入 mock 数据 =================
+
+-- AI conversations
+INSERT INTO ai_conversations (id, title, created_at) VALUES
+('conv-20260101','智能助手使用说明','2026-01-01 10:00:00');
+
+-- AI messages（mock 里没有时间，这里用 createdAt + seq 保序）
+INSERT INTO ai_messages (conversation_id, role, content, created_at, seq) VALUES
+('conv-20260101','assistant','你好！我是高校智能助手，可以为你提供学习与系统使用方面的帮助。','2026-01-01 10:00:00',1),
+('conv-20260101','user','你能帮我做什么？','2026-01-01 10:00:01',2),
+('conv-20260101','assistant','我可以解答课程问题、提供系统指引，并辅助你的学习规划。','2026-01-01 10:00:02',3);
+
+-- message conversations
+INSERT INTO message_conversations (id, name, avatar, updated_at) VALUES
+('msg-1','教务处','/system.png','2026-01-26 09:30:00'),
+('msg-2','张老师','/teacher.png','2026-01-25 18:10:00');
+
+-- message messages
+INSERT INTO message_messages (conversation_id, role, content, sent_at, seq) VALUES
+('msg-1','system','各位同学请注意。','2026-01-26 09:20:00',1),
+('msg-1','system','2025-2026 学年期末考试安排已公布。','2026-01-26 09:25:00',2),
+('msg-1','system','请登录教务系统查看具体时间。','2026-01-26 09:30:00',3),
+
+('msg-2','other','这周的作业难度不大。','2026-01-25 18:00:00',1),
+('msg-2','other','记得周五前提交。','2026-01-25 18:10:00',2);
